@@ -31,10 +31,10 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6">
-      
+
       {/* Header */}
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Domain Scraper Tool 
+        Domain Scraper Tool
       </h1>
 
       {/* Input Box */}
@@ -88,8 +88,19 @@ const App = () => {
                   >
                     <td className="p-3 font-medium">{item.domain}</td>
 
-                    <td className="p-3 text-blue-600 break-all">
-                      {item.finalUrl || "-"}
+                    <td className="p-3 break-all">
+                      {item.finalUrl ? (
+                        <a
+                          href={item.finalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {item.finalUrl}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
 
                     <td className="p-3">
