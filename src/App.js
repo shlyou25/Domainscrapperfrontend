@@ -43,7 +43,7 @@ const App = () => {
       setMessageIndex(0);
 
       const res = await fetch(
-        "https://effectively-ambient-flashing-enabled.trycloudflare.com/scrape",
+        "https://mission-locations-officials-lone.trycloudflare.com/scrape",
         {
           method: "POST",
           headers: {
