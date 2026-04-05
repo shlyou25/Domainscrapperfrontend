@@ -45,7 +45,7 @@ const App = () => {
       setMessageIndex(0);
 
       const res = await fetch(
-        "https://ownership-testimonials-unto-brilliant.trycloudflare.com/scrape",
+        "https://domainscrapping.onrender.com/scrape",
         {
           method: "POST",
           headers: {
