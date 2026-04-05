@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 const messages = [
   "🔍 Fetching domains...",
@@ -14,12 +16,12 @@ const App = () => {
   const [startUrl, setStartUrl] = useState("");
   const [endUrl, setEndUrl] = useState("");
   const [paginationMode, setPaginationMode] = useState(false);
-
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [messageIndex, setMessageIndex] = useState(0);
+  const [search, setSearch] = useState("");
+  const [selectedTLD, setSelectedTLD] = useState("all");
 
-  // rotating loader messages
   useEffect(() => {
     if (!loading) return;
     const interval = setInterval(() => {
@@ -66,19 +68,56 @@ const App = () => {
       setLoading(false);
     }
   };
+  const getTLD = (domain) => domain.split(".").pop();
+  const processedData = data?.results
+    ?.map((item) => ({
+      ...item,
+      tld: getTLD(item.domain),
+    }))
+    ?.filter((item) => {
+      const matchSearch = item.domain
+        .toLowerCase()
+        .includes(search.toLowerCase());
 
+      const matchTLD =
+        selectedTLD === "all" || item.tld === selectedTLD;
+
+      return matchSearch && matchTLD;
+    });
+  const tlds = [
+    "all",
+    ...new Set(data?.results?.map((d) => getTLD(d.domain))),
+  ];
+
+
+const downloadExcel = () => {
+  const exportData = processedData.map((item) => ({
+    Domain: item.domain,
+    Redirect: item.finalUrl || item.domain,
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Domains");
+
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: "xlsx",
+    type: "array",
+  });
+
+  const blob = new Blob([excelBuffer], {
+    type: "application/octet-stream",
+  });
+
+  saveAs(blob, "domains.xlsx");
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center p-6">
-
-      {/* Header */}
       <h1 className="text-4xl font-bold text-gray-800 mb-6">
-         Domain Scraper
+        Domain Scraper
       </h1>
-
-      {/* Card */}
       <div className="bg-white shadow-xl rounded-2xl p-6 w-full max-w-2xl">
-
-        {/* Toggle */}
         <div className="flex items-center justify-between mb-4">
           <span className="font-medium text-gray-700">
             {paginationMode ? "Pagination Range (Start → End)" : "Website URL"}
@@ -95,8 +134,6 @@ const App = () => {
             />
           </button>
         </div>
-
-        {/* Inputs */}
         {!paginationMode ? (
           <input
             type="text"
@@ -124,8 +161,6 @@ const App = () => {
             />
           </div>
         )}
-
-        {/* Button */}
         <button
           onClick={handleScrape}
           disabled={loading}
@@ -137,8 +172,6 @@ const App = () => {
           {loading ? "Processing..." : "Scrape Domains"}
         </button>
       </div>
-
-      {/* Loader */}
       {loading && (
         <div className="mt-8 text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -147,67 +180,86 @@ const App = () => {
           </p>
         </div>
       )}
-
-      {/* Results */}
       {data && !data.error && (
-        <div className="mt-6 w-full max-w-5xl">
-          <h2 className="text-lg font-semibold mb-3">
-            Total Domains: {data.total}
-          </h2>
+        <div className="mt-8 w-full max-w-6xl">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
 
-          <div className="overflow-auto bg-white shadow rounded-xl">
+            <h2 className="text-xl font-semibold">
+              Domains ({processedData?.length})
+            </h2>
+
+            <div className="flex gap-2 flex-wrap">
+              <input
+                type="text"
+                placeholder="Search domain..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="border px-3 py-2 rounded-lg text-sm"
+              />
+              <select
+                value={selectedTLD}
+                onChange={(e) => setSelectedTLD(e.target.value)}
+                className="border px-3 py-2 rounded-lg text-sm"
+              >
+                {tlds.map((tld, i) => (
+                  <option key={i} value={tld}>
+                    {tld.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={downloadExcel}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                ⬇ Export Excel
+              </button>
+            </div>
+          </div>
+          <div className="overflow-auto bg-white shadow-xl rounded-2xl border">
             <table className="w-full text-sm">
-              <thead className="bg-gray-200">
+              <thead className="bg-gray-100 sticky top-0 z-10">
                 <tr>
                   <th className="p-3 text-left">Domain</th>
                   <th className="p-3 text-right">Redirect</th>
                 </tr>
               </thead>
-
               <tbody>
-                {data.results?.map((item, i) => (
-                  <tr key={i} className="border-t hover:bg-gray-50">
-                    <td className="p-2">
+                {processedData?.map((item, i) => (
+                  <tr
+                    key={i}
+                    className="border-t hover:bg-gray-50 transition"
+                  >
+                    <td className="p-3 font-medium text-blue-600">
                       <a
                         href={`http://${item.domain}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 hover:underline"
                       >
                         {item.domain}
                       </a>
                     </td>
-
-                    <td className="p-2 text-right">
+                    <td className="p-3 text-right text-blue-600">
                       <a
                         href={item.finalUrl || `http://${item.domain}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 hover:underline"
                       >
-                        {item.finalUrl || `http://${item.domain}`}
+                        {item.finalUrl || item.domain}
                       </a>
                     </td>
-
-                    {/* <td className="p-3">
-                      <span
-                        className={`font-semibold ${item.status === 200
-                          ? "text-green-600"
-                          : "text-red-500"
-                          }`}
-                      >
-                        {item.status === 200 ? "Success" : "Failed"}
-                      </span>
-                    </td> */}
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {processedData?.length === 0 && (
+              <p className="p-4 text-center text-gray-500">
+                No results found
+              </p>
+            )}
           </div>
         </div>
       )}
-
-      {/* Error */}
       {data?.error && (
         <p className="mt-6 text-red-500 font-semibold">
           {data.error}
