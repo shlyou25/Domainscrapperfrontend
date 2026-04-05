@@ -46,6 +46,7 @@ const App = () => {
 
       const res = await fetch(
         "https://domainscrapping.onrender.com/scrape",
+        // "http://localhost:5001/scrape",
         {
           method: "POST",
           headers: {
