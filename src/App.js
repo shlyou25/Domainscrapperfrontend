@@ -46,7 +46,6 @@ const App = () => {
 
       const res = await fetch(
         "https://domainscrapping.onrender.com/scrape",
-        // "http://localhost:5001/scrape",
         {
           method: "POST",
           headers: {
@@ -80,8 +79,14 @@ const App = () => {
         .toLowerCase()
         .includes(search.toLowerCase());
 
+      const allowedTLDs = ["com", "org", "net", "ai", "io", "xyz"];
+
       const matchTLD =
-        selectedTLD === "all" || item.tld === selectedTLD;
+        selectedTLD === "all"
+          ? true
+          : selectedTLD === "others"
+            ? !allowedTLDs.includes(item.tld)
+            : item.tld === selectedTLD;
 
       return matchSearch && matchTLD;
     });
@@ -91,28 +96,28 @@ const App = () => {
   ];
 
 
-const downloadExcel = () => {
-  const exportData = processedData.map((item) => ({
-    Domain: item.domain,
-    Redirect: item.finalUrl || item.domain,
-  }));
+  const downloadExcel = () => {
+    const exportData = processedData.map((item) => ({
+      Domain: item.domain,
+      Redirect: item.finalUrl || item.domain,
+    }));
 
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
 
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Domains");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Domains");
 
-  const excelBuffer = XLSX.write(workbook, {
-    bookType: "xlsx",
-    type: "array",
-  });
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
 
-  const blob = new Blob([excelBuffer], {
-    type: "application/octet-stream",
-  });
+    const blob = new Blob([excelBuffer], {
+      type: "application/octet-stream",
+    });
 
-  saveAs(blob, "domains.xlsx");
-};
+    saveAs(blob, "domains.xlsx");
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center p-6">
       <h1 className="text-4xl font-bold text-gray-800 mb-6">
