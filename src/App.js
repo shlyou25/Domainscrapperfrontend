@@ -45,7 +45,7 @@ const App = () => {
       setMessageIndex(0);
 
       const res = await fetch(
-        "https://domainscrapper-backend.onrender.com/scrape",
+        "https://domainscrapping.onrender.com/scrape",
         {
           method: "POST",
           headers: {
