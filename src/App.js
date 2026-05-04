@@ -23,9 +23,16 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [messageIndex, setMessageIndex] = useState(0);
   const [search, setSearch] = useState("");
+  const [domzFilter, setDomzFilter] = useState(false);
 
   // ✅ NEW: multi-select filter
   const [selectedTLDs, setSelectedTLDs] = useState([]);
+
+  useEffect(() => {
+  if (domzFilter) {
+    setSelectedTLDs(["com", "org", "net", "ai", "io", "xyz"]);
+  }
+}, [domzFilter]);
 
   useEffect(() => {
     if (!loading) return;
@@ -51,6 +58,7 @@ const App = () => {
 
       const res = await fetch(
         "https://domainscrapper-backend.onrender.com/scrape",
+        // "http://localhost:5001/scrape",
         {
           method: "POST",
           headers: {
@@ -83,24 +91,39 @@ const App = () => {
         : [...prev, tld]
     );
   };
+  const isDomzValid = (domain) => {
+  const name = domain.split(".")[0];
 
-  const processedData = data?.results
-    ?.map((item) => ({
-      ...item,
-      tld: getTLD(item.domain),
-    }))
-    ?.filter((item) => {
-      const matchSearch = item.domain
-        .toLowerCase()
-        .includes(search.toLowerCase());
+  // Only letters (no numbers, no hyphens, no special chars)
+  const isAlphaOnly = /^[a-zA-Z]+$/.test(name);
 
-      const matchTLD =
-        selectedTLDs.length === 0
-          ? true
-          : selectedTLDs.includes(item.tld);
+  // Allowed TLDs
+  const allowedTLDs = ["com", "org", "net", "ai", "io", "xyz"];
+  const tld = getTLD(domain);
 
-      return matchSearch && matchTLD;
-    });
+  return isAlphaOnly && allowedTLDs.includes(tld);
+};
+const processedData = data?.results
+  ?.map((item) => ({
+    ...item,
+    tld: getTLD(item.domain),
+  }))
+  ?.filter((item) => {
+    const matchSearch = item.domain
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchTLD =
+      selectedTLDs.length === 0
+        ? true
+        : selectedTLDs.includes(item.tld);
+
+    const matchDomz = domzFilter ? isDomzValid(item.domain) : true;
+
+    return matchSearch && matchTLD && matchDomz;
+  });
+
+
 
   const downloadExcel = () => {
     const exportData = processedData.map((item) => ({
@@ -142,14 +165,12 @@ const App = () => {
 
           <button
             onClick={() => setPaginationMode(!paginationMode)}
-            className={`w-14 h-7 flex items-center rounded-full p-1 transition ${
-              paginationMode ? "bg-blue-600" : "bg-gray-300"
-            }`}
+            className={`w-14 h-7 flex items-center rounded-full p-1 transition ${paginationMode ? "bg-blue-600" : "bg-gray-300"
+              }`}
           >
             <div
-              className={`bg-white w-5 h-5 rounded-full shadow-md transform transition ${
-                paginationMode ? "translate-x-7" : ""
-              }`}
+              className={`bg-white w-5 h-5 rounded-full shadow-md transform transition ${paginationMode ? "translate-x-7" : ""
+                }`}
             />
           </button>
         </div>
@@ -185,11 +206,10 @@ const App = () => {
         <button
           onClick={handleScrape}
           disabled={loading}
-          className={`w-full py-2 rounded-lg text-white font-medium ${
-            loading
+          className={`w-full py-2 rounded-lg text-white font-medium ${loading
               ? "bg-gray-400"
               : "bg-blue-600 hover:bg-blue-700"
-          }`}
+            }`}
         >
           {loading ? "Processing..." : "Scrape Domains"}
         </button>
@@ -211,6 +231,15 @@ const App = () => {
 
           {/* SIDEBAR FILTER */}
           <div className="w-64 bg-white shadow-xl rounded-2xl p-5 border h-fit sticky top-6">
+            <button
+              onClick={() => setDomzFilter((prev) => !prev)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${domzFilter
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-200 text-gray-700"
+                }`}
+            >
+              DOMZ Filter
+            </button>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Extensions</h3>
               <button
@@ -220,6 +249,7 @@ const App = () => {
                 Clear
               </button>
             </div>
+
 
             <div className="space-y-3">
               {TLD_OPTIONS.map((tld) => (
