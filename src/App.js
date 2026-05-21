@@ -149,14 +149,22 @@ const downloadExcel = () => {
   }
 
   // Prepare export data
-  const exportData = processedData.map((item) => ({
-    domainName: item.domain,
-    url: item.finalUrl || `http://${item.domain}`,
-  }));
+// Prepare export data with exact headers
+const exportData = processedData.map((item) => ({
+  domainName: item.domain,
+  url: item.finalUrl || `http://${item.domain}`,
+}));
 
-  // Create worksheet
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
+// Create worksheet
+const worksheet = XLSX.utils.json_to_sheet(exportData, {
+  header: ["domainName", "url"],
+});
 
+// Optional: set column widths
+worksheet["!cols"] = [
+  { wch: 35 },
+  { wch: 60 },
+];
   // Create workbook
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Domains");
