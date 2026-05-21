@@ -125,28 +125,57 @@ const processedData = data?.results
 
 
 
-  const downloadExcel = () => {
-    const exportData = processedData.map((item) => ({
-      Domain: item.domain,
-      Redirect: item.finalUrl || item.domain,
-    }));
+const downloadExcel = () => {
+  if (!processedData || processedData.length === 0) {
+    return alert("No data to export");
+  }
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
+  // Get base URL name
+  const sourceUrl = paginationMode ? startUrl : url;
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Domains");
+  let fileName = "domains";
 
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
-    });
+  try {
+    const parsedUrl = new URL(sourceUrl);
 
-    const blob = new Blob([excelBuffer], {
-      type: "application/octet-stream",
-    });
+    // Remove www.
+    fileName = parsedUrl.hostname.replace(/^www\./, "");
 
-    saveAs(blob, "domains.xlsx");
-  };
+    // Optional: remove extension if needed
+    // example.com -> example
+    fileName = fileName.split(".")[0];
+  } catch {
+    console.log("Invalid URL, using default filename");
+  }
+
+  // Prepare export data
+  const exportData = processedData.map((item) => ({
+    domainName: item.domain,
+    url: item.finalUrl || `http://${item.domain}`,
+  }));
+
+  // Create worksheet
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+  // Create workbook
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Domains");
+
+  // Generate Excel buffer
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: "xlsx",
+    type: "array",
+  });
+
+  // Create blob
+  const blob = new Blob([excelBuffer], {
+    type:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  // Save automatically
+  saveAs(blob, `${fileName}.xlsx`);
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-6">
